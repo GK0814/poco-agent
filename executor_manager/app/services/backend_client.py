@@ -1,3 +1,5 @@
+from typing import Any
+
 import httpx
 
 from app.core.settings import get_settings
@@ -275,3 +277,133 @@ class BackendClient:
             response.raise_for_status()
             data = response.json()
             return data["data"]
+
+    async def create_memory(self, session_id: str, payload: dict[str, Any]) -> Any:
+        """Create memories via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/api/v1/internal/memories",
+                params={"session_id": session_id},
+                json=payload,
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("data")
+
+    async def list_memories(self, session_id: str) -> Any:
+        """List memories via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/api/v1/internal/memories",
+                params={"session_id": session_id},
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("data")
+
+    async def search_memories(self, session_id: str, payload: dict[str, Any]) -> Any:
+        """Search memories via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.base_url}/api/v1/internal/memories/search",
+                params={"session_id": session_id},
+                json=payload,
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("data")
+
+    async def get_memory(self, session_id: str, memory_id: str) -> Any:
+        """Get a memory by id via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/api/v1/internal/memories/{memory_id}",
+                params={"session_id": session_id},
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("data")
+
+    async def update_memory(
+        self,
+        session_id: str,
+        memory_id: str,
+        payload: dict[str, Any],
+    ) -> Any:
+        """Update a memory by id via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.put(
+                f"{self.base_url}/api/v1/internal/memories/{memory_id}",
+                params={"session_id": session_id},
+                json=payload,
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("data")
+
+    async def get_memory_history(self, session_id: str, memory_id: str) -> Any:
+        """Get memory history via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{self.base_url}/api/v1/internal/memories/{memory_id}/history",
+                params={"session_id": session_id},
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("data")
+
+    async def delete_memory(self, session_id: str, memory_id: str) -> dict[str, Any]:
+        """Delete a memory by id via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(
+                f"{self.base_url}/api/v1/internal/memories/{memory_id}",
+                params={"session_id": session_id},
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            result = data.get("data")
+            return result if isinstance(result, dict) else {}
+
+    async def delete_all_memories(self, session_id: str) -> dict[str, Any]:
+        """Delete all memories in session scope via backend internal API."""
+        async with httpx.AsyncClient() as client:
+            response = await client.delete(
+                f"{self.base_url}/api/v1/internal/memories",
+                params={"session_id": session_id},
+                headers={
+                    "X-Internal-Token": self.settings.internal_api_token,
+                    **self._trace_headers(),
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            result = data.get("data")
+            return result if isinstance(result, dict) else {}
