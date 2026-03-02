@@ -1691,7 +1691,7 @@
   },
   "memories": {
     "title": "记忆",
-    "subtitle": "管理用户级长期记忆条目。",
+    "subtitle": "管理用户级长期记忆条目",
     "stats": {
       "count": "{{count}} 条"
     },
@@ -1702,14 +1702,15 @@
       "edit": "编辑",
       "update": "保存",
       "delete": "删除",
-      "create": "创建"
+      "create": "创建",
+      "creating": "创建中..."
     },
     "search": {
       "queryPlaceholder": "搜索记忆..."
     },
     "create": {
       "title": "新增记忆",
-      "desc": "输入你希望 Poco 记住的信息。",
+      "desc": "输入你希望 Poco 记住的信息",
       "contentPlaceholder": "输入想让 Poco 记住的内容"
     },
     "edit": {
@@ -1720,8 +1721,26 @@
       "updatedAt": "更新时间",
       "createdAt": "创建时间"
     },
+    "progress": {
+      "title": "创建进度",
+      "status": "状态",
+      "value": "进度",
+      "jobId": "任务 ID",
+      "hints": {
+        "running": "正在添加记忆...",
+        "success": "记忆添加完成",
+        "failed": "记忆添加失败"
+      },
+      "statuses": {
+        "queued": "排队中",
+        "running": "处理中",
+        "success": "成功",
+        "failed": "失败",
+        "unknown": "未知"
+      }
+    },
     "list": {
-      "empty": "暂无记忆。"
+      "empty": "暂无记忆"
     },
     "toasts": {
       "invalidJson": "JSON 格式不正确",
@@ -1729,7 +1748,8 @@
       "created": "记忆已创建",
       "updated": "记忆已更新",
       "deleted": "记忆已删除",
-      "cleared": "已清空全部记忆"
+      "cleared": "已清空全部记忆",
+      "timeout": "创建超时，请稍后重试"
     }
   },
   "onboarding": {

@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
   memory: (memoryId: string) => `/memories/${memoryId}`,
   memoryHistory: (memoryId: string) => `/memories/${memoryId}/history`,
   memoryCreateJob: (jobId: string) => `/memories/jobs/${jobId}`,
+  memoryActiveCreateJob: "/memories/jobs/active",
 
   // Search
   search: "/search",

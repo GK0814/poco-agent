@@ -1702,7 +1702,8 @@
       "edit": "Edit",
       "update": "Save",
       "delete": "Delete",
-      "create": "Create"
+      "create": "Create",
+      "creating": "Creating..."
     },
     "search": {
       "queryPlaceholder": "Search memories..."
@@ -1720,6 +1721,24 @@
       "updatedAt": "Updated",
       "createdAt": "Created"
     },
+    "progress": {
+      "title": "Create Progress",
+      "status": "Status",
+      "value": "Progress",
+      "jobId": "Job ID",
+      "hints": {
+        "running": "Adding memory...",
+        "success": "Memory added",
+        "failed": "Failed to add memory"
+      },
+      "statuses": {
+        "queued": "Queued",
+        "running": "Running",
+        "success": "Success",
+        "failed": "Failed",
+        "unknown": "Unknown"
+      }
+    },
     "list": {
       "empty": "No memories found."
     },
@@ -1729,7 +1748,8 @@
       "created": "Memory created",
       "updated": "Memory updated",
       "deleted": "Memory deleted",
-      "cleared": "All memories cleared"
+      "cleared": "All memories cleared",
+      "timeout": "Create timed out. Please try again later."
     }
   },
   "onboarding": {

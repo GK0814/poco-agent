@@ -35,3 +35,19 @@ class MemoryCreateJobRepository:
             .filter(MemoryCreateJob.id == job_id)
             .first()
         )
+
+    @staticmethod
+    def get_latest_active_by_user(
+        session_db: Session,
+        *,
+        user_id: str,
+    ) -> MemoryCreateJob | None:
+        return (
+            session_db.query(MemoryCreateJob)
+            .filter(
+                MemoryCreateJob.user_id == user_id,
+                MemoryCreateJob.status.in_(["queued", "running"]),
+            )
+            .order_by(MemoryCreateJob.created_at.desc())
+            .first()
+        )

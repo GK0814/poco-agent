@@ -25,6 +25,12 @@ export const memoriesApi = {
     );
   },
 
+  getActiveCreateJob: async (): Promise<MemoryCreateJobStatus | null> => {
+    return apiClient.get<MemoryCreateJobStatus | null>(
+      API_ENDPOINTS.memoryActiveCreateJob,
+    );
+  },
+
   search: async (input: MemorySearchInput): Promise<unknown> => {
     return apiClient.post<unknown>(API_ENDPOINTS.memoriesSearch, input);
   },

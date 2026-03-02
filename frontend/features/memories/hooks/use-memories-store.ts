@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useT } from "@/lib/i18n/client";
@@ -14,6 +14,20 @@ import type {
 
 const MEMORY_CREATE_POLL_INTERVAL_MS = 1000;
 const MEMORY_CREATE_POLL_MAX_ATTEMPTS = 60;
+
+interface MemoryCreateJobState {
+  jobId: string | null;
+  status: string | null;
+  progress: number;
+  error: string | null;
+}
+
+const DEFAULT_CREATE_JOB_STATE: MemoryCreateJobState = {
+  jobId: null,
+  status: null,
+  progress: 0,
+  error: null,
+};
 
 function toRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -94,6 +108,15 @@ export function useMemoriesStore() {
   const [isMutating, setIsMutating] = useState(false);
   const [lastPayload, setLastPayload] = useState<unknown>(null);
   const [mode, setMode] = useState<"list" | "search">("list");
+  const [createJob, setCreateJob] = useState<MemoryCreateJobState>(
+    DEFAULT_CREATE_JOB_STATE,
+  );
+  const createJobPollingIdRef = useRef<string | null>(null);
+
+  const resetCreateJob = useCallback(() => {
+    createJobPollingIdRef.current = null;
+    setCreateJob(DEFAULT_CREATE_JOB_STATE);
+  }, []);
 
   const refresh = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
@@ -137,60 +160,170 @@ export function useMemoriesStore() {
 
   const waitForCreateJob = useCallback(
     async (jobId: string) => {
-      for (
-        let attempt = 0;
-        attempt < MEMORY_CREATE_POLL_MAX_ATTEMPTS;
-        attempt += 1
-      ) {
-        const payload = await memoriesApi.getCreateJob(jobId);
-        setLastPayload(payload);
+      if (createJobPollingIdRef.current === jobId) return true;
+      createJobPollingIdRef.current = jobId;
 
-        const raw = toRecord(payload);
-        const status = asString(raw?.status)?.toLowerCase();
-        if (status === "success") {
-          toast.success(t("memories.toasts.created", "Memory created"));
-          await refresh({ silent: true });
-          return;
-        }
-        if (status === "failed") {
-          console.error("[Memories] create job failed", raw);
-          toast.error(t("memories.toasts.error", "Operation failed"));
-          return;
+      setCreateJob((prev) => ({
+        ...prev,
+        jobId,
+      }));
+
+      try {
+        for (
+          let attempt = 0;
+          attempt < MEMORY_CREATE_POLL_MAX_ATTEMPTS;
+          attempt += 1
+        ) {
+          if (createJobPollingIdRef.current !== jobId) return false;
+
+          const payload = await memoriesApi.getCreateJob(jobId);
+          setLastPayload(payload);
+
+          const raw = toRecord(payload);
+          const status = asString(raw?.status)?.toLowerCase();
+          const progress =
+            typeof raw?.progress === "number"
+              ? Math.max(0, Math.min(100, raw.progress))
+              : null;
+          const errorMessage = asString(raw?.error);
+
+          setCreateJob({
+            jobId,
+            status: status ?? "running",
+            progress:
+              progress ??
+              (status === "success" ? 100 : status === "queued" ? 0 : 0),
+            error: errorMessage,
+          });
+
+          if (status === "success") {
+            toast.success(t("memories.toasts.created", "Memory created"));
+            await refresh({ silent: true });
+            return true;
+          }
+          if (status === "failed") {
+            console.error("[Memories] create job failed", raw);
+            toast.error(
+              errorMessage || t("memories.toasts.error", "Operation failed"),
+            );
+            return false;
+          }
+
+          await sleep(MEMORY_CREATE_POLL_INTERVAL_MS);
         }
 
-        await sleep(MEMORY_CREATE_POLL_INTERVAL_MS);
+        console.error("[Memories] create job polling timeout", { jobId });
+        setCreateJob({
+          jobId,
+          status: "failed",
+          progress: 0,
+          error: t("memories.toasts.timeout", "Create timed out"),
+        });
+        toast.error(t("memories.toasts.timeout", "Create timed out"));
+        return false;
+      } catch (error) {
+        console.error("[Memories] create job polling failed", error);
+        setCreateJob({
+          jobId,
+          status: "failed",
+          progress: 0,
+          error: t("memories.toasts.error", "Operation failed"),
+        });
+        toast.error(t("memories.toasts.error", "Operation failed"));
+        return false;
+      } finally {
+        if (createJobPollingIdRef.current === jobId) {
+          createJobPollingIdRef.current = null;
+        }
       }
-
-      console.error("[Memories] create job polling timeout", { jobId });
-      toast.error(t("memories.toasts.error", "Operation failed"));
     },
     [refresh, t],
   );
 
+  const resumeActiveCreateJob = useCallback(async () => {
+    try {
+      const payload = await memoriesApi.getActiveCreateJob();
+      if (!payload) {
+        setCreateJob(DEFAULT_CREATE_JOB_STATE);
+        return;
+      }
+
+      setLastPayload(payload);
+      const raw = toRecord(payload);
+      const jobId = asString(raw?.job_id) ?? asString(raw?.jobId);
+      const status = asString(raw?.status)?.toLowerCase() ?? "running";
+      const progress =
+        typeof raw?.progress === "number"
+          ? Math.max(0, Math.min(100, raw.progress))
+          : status === "success"
+            ? 100
+            : 0;
+      const errorMessage = asString(raw?.error);
+
+      if (!jobId) {
+        setCreateJob(DEFAULT_CREATE_JOB_STATE);
+        return;
+      }
+
+      setCreateJob({
+        jobId,
+        status,
+        progress,
+        error: errorMessage,
+      });
+
+      if (status === "queued" || status === "running") {
+        void waitForCreateJob(jobId);
+      }
+    } catch (error) {
+      console.error("[Memories] load active create job failed", error);
+    }
+  }, [waitForCreateJob]);
+
+  useEffect(() => {
+    void resumeActiveCreateJob();
+  }, [resumeActiveCreateJob]);
+
   const create = useCallback(
     async (input: MemoryCreateInput) => {
       setIsMutating(true);
+      resetCreateJob();
       try {
         const payload = await memoriesApi.create(input);
         setLastPayload(payload);
 
         const raw = toRecord(payload);
         const jobId = asString(raw?.job_id) ?? asString(raw?.jobId);
+        const status = asString(raw?.status)?.toLowerCase() ?? "queued";
         if (jobId) {
+          setCreateJob({
+            jobId,
+            status,
+            progress: status === "success" ? 100 : 0,
+            error: null,
+          });
           void waitForCreateJob(jobId);
-          return;
+          return true;
         }
 
         toast.success(t("memories.toasts.created", "Memory created"));
         await refresh({ silent: true });
+        return true;
       } catch (error) {
         console.error("[Memories] create failed", error);
         toast.error(t("memories.toasts.error", "Operation failed"));
+        setCreateJob({
+          jobId: null,
+          status: "failed",
+          progress: 0,
+          error: t("memories.toasts.error", "Operation failed"),
+        });
+        return false;
       } finally {
         setIsMutating(false);
       }
     },
-    [refresh, t, waitForCreateJob],
+    [refresh, resetCreateJob, t, waitForCreateJob],
   );
 
   const getById = useCallback(
@@ -280,11 +413,13 @@ export function useMemoriesStore() {
     items,
     isLoading,
     isMutating,
+    createJob,
     lastPayload,
     mode,
     refresh,
     search,
     create,
+    resetCreateJob,
     getById,
     getHistory,
     update,

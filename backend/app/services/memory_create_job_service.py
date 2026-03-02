@@ -69,6 +69,20 @@ class MemoryCreateJobService:
             )
         return self._to_schema(job)
 
+    def get_active_job(
+        self,
+        db: Session,
+        *,
+        user_id: str,
+    ) -> MemoryCreateJobResponse | None:
+        job = MemoryCreateJobRepository.get_latest_active_by_user(
+            db,
+            user_id=user_id,
+        )
+        if job is None:
+            return None
+        return self._to_schema(job)
+
     def process_create_job(self, job_id: uuid.UUID) -> None:
         db = SessionLocal()
         job: MemoryCreateJob | None = None

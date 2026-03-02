@@ -42,11 +42,26 @@ export function MemoriesPageClient() {
   );
   const [editingMemoryText, setEditingMemoryText] = React.useState("");
 
-  const handleCreate = async () => {
+  const createJobStatus = (store.createJob.status || "").toLowerCase();
+  const isCreating =
+    createJobStatus === "queued" || createJobStatus === "running";
+  const createStatusLabel = t(
+    `memories.progress.statuses.${createJobStatus || "unknown"}`,
+    createJobStatus || t("memories.progress.statuses.unknown", "Unknown"),
+  );
+  const createStatusHint = isCreating
+    ? t("memories.progress.hints.running", "Adding memory...")
+    : createJobStatus === "success"
+      ? t("memories.progress.hints.success", "Memory added")
+      : createJobStatus === "failed"
+        ? t("memories.progress.hints.failed", "Failed to add memory")
+        : null;
+
+  const handleCreate = () => {
     const trimmed = newMemoryText.trim();
     if (!trimmed) return;
 
-    await store.create({
+    void store.create({
       messages: [{ role: "user", content: buildCreateMessage(trimmed) }],
     });
     setNewMemoryText("");
@@ -96,15 +111,6 @@ export function MemoriesPageClient() {
       </span>
       <div className="flex flex-1 flex-nowrap items-center justify-end gap-2 overflow-x-auto">
         <Button
-          variant="outline"
-          className="gap-2"
-          onClick={() => void handleSearch()}
-          disabled={store.isMutating || !searchQuery.trim()}
-        >
-          <Search className="size-4" />
-          {t("memories.actions.search", "Search")}
-        </Button>
-        <Button
           variant="ghost"
           className="gap-2"
           onClick={() => void store.refresh()}
@@ -122,6 +128,15 @@ export function MemoriesPageClient() {
           )}
           className="w-full md:w-72"
         />
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => void handleSearch()}
+          disabled={store.isMutating || !searchQuery.trim()}
+        >
+          <Search className="size-4" />
+          {t("memories.actions.search", "Search")}
+        </Button>
       </div>
     </div>
   );
@@ -170,6 +185,25 @@ export function MemoriesPageClient() {
                   onClick={() => setIsCreateOpen(true)}
                   disabled={store.isMutating}
                 />
+                {createStatusHint ? (
+                  <div className="rounded-xl border border-border/50 bg-muted/10 px-4 py-3">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-muted-foreground">
+                          {createStatusHint}
+                        </p>
+                      </div>
+                      <span className="shrink-0 font-medium text-foreground">
+                        {createStatusLabel}
+                      </span>
+                    </div>
+                    {store.createJob.error ? (
+                      <div className="mt-1 text-xs text-destructive break-words">
+                        {store.createJob.error}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
                 {store.isLoading && store.items.length === 0 ? (
                   <SkeletonShimmer
                     count={5}
@@ -260,12 +294,14 @@ export function MemoriesPageClient() {
                 {t("common.cancel", "Cancel")}
               </Button>
               <Button
-                className="w-full gap-2"
                 onClick={() => void handleCreate()}
                 disabled={store.isMutating || !newMemoryText.trim()}
+                className="w-full gap-2"
               >
-                <Plus className="size-4" />
-                {t("memories.actions.create", "Create")}
+                <span className="inline-flex items-center gap-2">
+                  <Plus className="size-4" />
+                  {t("memories.actions.create", "Create")}
+                </span>
               </Button>
             </DialogFooter>
           }
