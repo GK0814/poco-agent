@@ -23,6 +23,8 @@ class TaskConfig(BaseModel):
     git_branch: str = "main"
     # Built-in browser capability toggle (Playwright MCP is injected internally by the executor).
     browser_enabled: bool = False
+    # Built-in memory capability toggle (Memory MCP is injected internally by the executor).
+    memory_enabled: bool = False
     mcp_config: dict = Field(default_factory=dict)
     mcp_server_ids: list[int] = Field(default_factory=list)
     skill_files: dict = Field(default_factory=dict)
