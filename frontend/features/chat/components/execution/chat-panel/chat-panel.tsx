@@ -6,9 +6,9 @@ import {
   Image as ImageIcon,
   Loader2,
   MessageSquare,
+  MoreHorizontal,
   PanelRightClose,
   PanelRightOpen,
-  Pencil,
   Quote,
 } from "lucide-react";
 import { ChatMessageList } from "../../chat/chat-message-list";
@@ -32,7 +32,7 @@ import {
   regenerateMessageAction,
   renameSessionTitleAction,
 } from "@/features/chat/actions/session-actions";
-import { RenameTaskDialog } from "@/features/projects/components/rename-task-dialog";
+import { RenameTaskDialog, TaskActionsDropdown } from "@/features/projects";
 import type {
   ExecutionSession,
   InputFile,
@@ -55,6 +55,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/hooks/use-language";
+import { useAppShell } from "@/components/shell/app-shell-context";
 
 interface ChatPanelProps {
   session: ExecutionSession | null;
@@ -136,6 +137,8 @@ export function ChatPanel({
   const lng = useLanguage();
   const { t } = useT("translation");
   const { refreshTasks, touchTask } = useTaskHistoryContext();
+  const { projects, pinnedTaskIds, toggleTaskPin, moveTask, removeTask } =
+    useAppShell();
   const [isCancelling, setIsCancelling] = React.useState(false);
   const [isExportingImage, setIsExportingImage] = React.useState(false);
   const [isRenameDialogOpen, setIsRenameDialogOpen] = React.useState(false);
@@ -394,6 +397,26 @@ export function ChatPanel({
       }
     },
     [refreshTasks, session?.session_id, t, updateSession],
+  );
+
+  const isCurrentSessionPinned = React.useMemo(() => {
+    if (!session?.session_id) return false;
+    return pinnedTaskIds.includes(session.session_id);
+  }, [pinnedTaskIds, session?.session_id]);
+
+  const handleMoveTaskToProject = React.useCallback(
+    async (taskId: string, projectId: string | null) => {
+      await moveTask(taskId, projectId);
+    },
+    [moveTask],
+  );
+
+  const handleDeleteTask = React.useCallback(
+    async (taskId: string) => {
+      await removeTask(taskId);
+      router.push(lng ? `/${lng}/home` : "/home");
+    },
+    [lng, removeTask, router],
   );
 
   const userPromptHistory = React.useMemo(
@@ -753,12 +776,22 @@ export function ChatPanel({
                   </DropdownMenu>
                 ) : null}
                 {session?.session_id ? (
-                  <PanelHeaderAction
-                    onClick={() => setIsRenameDialogOpen(true)}
-                    title={t("sidebar.rename")}
+                  <TaskActionsDropdown
+                    taskId={session.session_id}
+                    isPinned={isCurrentSessionPinned}
+                    projects={projects}
+                    onTogglePin={toggleTaskPin}
+                    onRename={() => setIsRenameDialogOpen(true)}
+                    onMoveToProject={handleMoveTaskToProject}
+                    onDelete={handleDeleteTask}
                   >
-                    <Pencil className="size-4" />
-                  </PanelHeaderAction>
+                    <PanelHeaderAction
+                      title={t("sidebar.settings")}
+                      className="focus-visible:ring-0 data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </PanelHeaderAction>
+                  </TaskActionsDropdown>
                 ) : null}
                 {onToggleRightPanel ? (
                   <PanelHeaderAction

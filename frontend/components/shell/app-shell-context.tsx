@@ -35,9 +35,11 @@ export interface AppShellContextValue {
   deleteProject: (projectId: string) => Promise<void>;
 
   taskHistory: TaskHistoryItem[];
+  pinnedTaskIds: string[];
   addTask: (title: string, options?: AddTaskOptions) => TaskHistoryItem;
   removeTask: (taskId: string) => Promise<void>;
   moveTask: (taskId: string, projectId: string | null) => Promise<void>;
+  toggleTaskPin: (taskId: string) => void;
   refreshTasks: () => Promise<void>;
 }
 

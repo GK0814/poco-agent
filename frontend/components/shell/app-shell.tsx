@@ -71,9 +71,11 @@ export function AppShell({
       deleteProject: handleDeleteProject,
 
       taskHistory,
+      pinnedTaskIds,
       addTask,
       removeTask,
       moveTask,
+      toggleTaskPin,
       refreshTasks,
     }),
     [
@@ -84,9 +86,11 @@ export function AppShell({
       updateProject,
       handleDeleteProject,
       taskHistory,
+      pinnedTaskIds,
       addTask,
       removeTask,
       moveTask,
+      toggleTaskPin,
       refreshTasks,
     ],
   );

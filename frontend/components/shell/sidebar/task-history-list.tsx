@@ -2,15 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  MoreHorizontal,
-  FolderPlus,
-  Pencil,
-  Trash2,
-  GripVertical,
-  Pin,
-  PinOff,
-} from "lucide-react";
+import { MoreHorizontal, GripVertical, Pin } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
 
 import { useT } from "@/lib/i18n/client";
@@ -19,21 +11,13 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
   RenameTaskDialog,
+  TaskActionsDropdown,
   TASK_STATUS_META,
   type TaskHistoryItem,
 } from "@/features/projects";
@@ -223,92 +207,36 @@ function DraggableTask({
           )}
 
           {/* More actions - only in non-selection mode */}
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
+          <TaskActionsDropdown
+            taskId={task.id}
+            isPinned={isPinned}
+            projects={projects}
+            onTogglePin={onTogglePin}
+            onRename={onRenameClick ? () => onRenameClick(task) : undefined}
+            onMoveToProject={onMoveTaskToProject}
+            onDelete={onDeleteTask}
+            open={isDropdownOpen}
+            onOpenChange={setIsDropdownOpen}
+            side="right"
+          >
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
                   e.stopPropagation();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    (e.currentTarget as HTMLElement).click();
-                  }
-                }}
-                className="absolute top-1/2 right-2 -translate-y-1/2 shrink-0 size-5 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground opacity-0 transition-opacity group-hover/task-card:opacity-100 data-[state=open]:opacity-100 group-data-[collapsible=icon]:hidden cursor-pointer focus-visible:outline-none z-10"
-              >
-                <MoreHorizontal className="size-3.5" />
-              </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="right">
-              {onTogglePin && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTogglePin(task.id);
-                  }}
-                >
-                  {isPinned ? (
-                    <PinOff className="size-4" />
-                  ) : (
-                    <Pin className="size-4" />
-                  )}
-                  <span>{t(isPinned ? "sidebar.unpin" : "sidebar.pin")}</span>
-                </DropdownMenuItem>
-              )}
-              {onRenameClick && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRenameClick(task);
-                  }}
-                >
-                  <Pencil className="size-4" />
-                  <span>{t("sidebar.rename")}</span>
-                </DropdownMenuItem>
-              )}
-              {onMoveTaskToProject ? (
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className="focus:bg-muted focus:text-foreground data-[state=open]:bg-muted data-[state=open]:text-foreground">
-                    <FolderPlus className="size-4" />
-                    <span>{t("sidebar.moveToProject")}</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="bg-popover">
-                    {projects.map((project) => (
-                      <DropdownMenuItem
-                        key={project.id}
-                        className="focus:bg-muted focus:text-foreground"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMoveTaskToProject(task.id, project.id);
-                        }}
-                      >
-                        <span className="truncate">{project.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-              ) : (
-                <DropdownMenuItem disabled>
-                  <FolderPlus className="size-4" />
-                  <span>{t("sidebar.moveToProject")}</span>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteTask(task.id);
-                }}
-              >
-                <Trash2 className="size-4 text-destructive" />
-                <span>{t("sidebar.delete")}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  (e.currentTarget as HTMLElement).click();
+                }
+              }}
+              className="absolute top-1/2 right-2 -translate-y-1/2 shrink-0 size-5 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground opacity-0 transition-opacity group-hover/task-card:opacity-100 data-[state=open]:opacity-100 group-data-[collapsible=icon]:hidden cursor-pointer focus-visible:outline-none z-10"
+            >
+              <MoreHorizontal className="size-3.5" />
+            </div>
+          </TaskActionsDropdown>
         </div>
       )}
     </SidebarMenuItem>
