@@ -1,26 +1,26 @@
-## Poco IM 服务（独立）
+## Poco IM Service (Standalone)
 
-该服务用于：
+This service is used to:
 
-- 通过 IM（当前实现：Telegram / 钉钉）发起任务、续聊、回答 AskQuestion/Plan Approval
-- 通过轮询 Backend 的公开 API 发送通知（完成/失败/需要输入）
+- Start tasks, continue conversations, and answer AskQuestion/Plan Approval requests through IM platforms (currently Telegram / DingTalk)
+- Send notifications by polling the Backend public API (completed / failed / input required)
 
-设计目标：
+Design goals:
 
-- **与 Backend 数据库完全解耦**：IM 使用独立数据库（默认 `sqlite:///./im.db`）
-- **Backend 单独运行不受影响**：不启用 IM 时，现有系统照常工作
-- **多 IM 可扩展**：通过统一消息模型和发送网关接入不同平台
+- **Fully decoupled from the Backend database**: IM uses its own database (default: `sqlite:///./im.db`)
+- **No impact on standalone Backend operation**: if IM is not enabled, the existing system continues to work as usual
+- **Extensible across multiple IM platforms**: integrate different platforms through a unified message model and delivery gateway
 
-### 运行
+### Run
 
-在 `im/` 目录：
+From the `im/` directory:
 
 ```bash
 uv sync
 uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8002
 ```
 
-### 环境变量（示例）
+### Environment Variables (Example)
 
 ```bash
 # IM service
@@ -44,38 +44,38 @@ TELEGRAM_WEBHOOK_SECRET_TOKEN=
 # DingTalk
 DINGTALK_ENABLED=true
 DINGTALK_WEBHOOK_TOKEN=
-# Stream Mode（推荐，用于“收消息/事件推送/卡片回调”，无需公网 webhook）
+# Stream mode (recommended for receiving messages, event push, and card callbacks; no public webhook required)
 DINGTALK_STREAM_ENABLED=true
-# 可选：订阅全量事件（EVENT topic="*"），默认 false（事件较多）
+# Optional: subscribe to all events (EVENT topic="*"), default is false because the event volume can be high
 DINGTALK_STREAM_SUBSCRIBE_EVENTS=false
-# OpenAPI（推荐，用于“主动发消息/通知”，不依赖 sessionWebhook）
+# OpenAPI (recommended for proactive messages and notifications; does not depend on sessionWebhook)
 DINGTALK_CLIENT_ID=
 DINGTALK_CLIENT_SECRET=
 DINGTALK_ROBOT_CODE=
 DINGTALK_OPEN_BASE_URL=https://api.dingtalk.com
-# 可选：仅出站的固定 webhook（兜底/通知用，通常是“群自定义机器人”的 webhook）
+# Optional: fixed outbound-only webhook (fallback / notification use, usually a group custom bot webhook)
 DINGTALK_WEBHOOK_URL=
 ```
 
 ### Webhook
 
 - Telegram: `POST /api/v1/webhooks/telegram`
-- 钉钉（Webhook 模式可选）：`POST /api/v1/webhooks/dingtalk`（如使用 Stream 模式则不需要配置公网回调）
+- DingTalk (optional in Webhook mode): `POST /api/v1/webhooks/dingtalk` (no public callback is needed when using Stream mode)
 
-### IM 命令
+### IM Commands
 
-- `/help`：查看完整命令列表
-- `/list [n]`：查看最近会话（默认 10 条）
-- `/connect <session_id|序号>`：连接会话（会自动订阅）
-- `/new <任务>`：创建新会话并自动连接
-- `/watch <session_id>`：订阅某个会话
-- `/watches`：查看全部订阅
-- `/unwatch <session_id|序号>`：取消订阅
-- `/link`：查看当前连接会话
-- `/clear`：清除当前会话绑定
-- `/answer <request_id> {...}`：回答 AskQuestion
-- `/answer <request_id> {"approved":"true|false"}`：回答 Plan Approval
+- `/help`: Show the full command list
+- `/list [n]`: Show recent sessions (default: 10)
+- `/connect <session_id|index>`: Connect to a session (and subscribe automatically)
+- `/new <task>`: Create a new session and connect automatically
+- `/watch <session_id>`: Subscribe to a session
+- `/watches`: Show all subscriptions
+- `/unwatch <session_id|index>`: Cancel a subscription
+- `/link`: Show the currently connected session
+- `/clear`: Clear the current session binding
+- `/answer <request_id> {...}`: Answer an AskQuestion request
+- `/answer <request_id> {"approved":"true|false"}`: Answer a Plan Approval request
 
-普通文本：如果当前已连接会话，会作为续聊消息发送。
+Plain text: if a session is currently connected, the message will be sent as a follow-up.
 
-提示：在群聊里仅 `@机器人`（不带其他内容）会自动返回命令帮助（等价于 `/help`）。
+Tip: in a group chat, mentioning only `@bot` with no additional content will automatically return the command help (equivalent to `/help`).
